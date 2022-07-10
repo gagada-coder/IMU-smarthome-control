@@ -1,0 +1,45 @@
+
+        return PCA(n_components=ld_n).fit_transform(df.values),label
+    return df,label
+def health_modeling(features,label):
+    from sklearn.model_selection import train_test_split       #切分训练集和测试集的函数
+    f_v=features.values    #之前返回的features是data frame，所以先进行取值,得到特征值
+    f_names=features.columns.values
+    l_v=label.values
+    X_tt,X_validation,Y_tt,Y_validation=train_test_split(f_v,l_v,test_size=0.2)        #先提取验证集，比例为20%,X_tt训练集,测试集部分，X_validation验证集部分，Y是标注 
+    X_train,X_test,Y_train,Y_test=train_test_split(X_tt,Y_tt,test_size=0.25)           #填入之前的训练集测试集部分，因为验证集部分已经被隔离出去，所以剩下的所谓的测试集占比为25%
+    #Tree
+    from sklearn.metrics import accuracy_score,recall_score,f1_score           #衡量指标
+    from sklearn.tree import DecisionTreeClassifier,export_graphviz
+    from sklearn.externals.six import StringIO           
+    models=[]
+    models.append(("treeGini",DecisionTreeClassifier()))                  #GIni系数
+    # models.append(("treeEntropy",DecisionTreeClassifier(criterion="entropy")))   #信息增益
+    for clf_name,clf in models:
+        clf.fit(X_train,Y_train)
+        xy_lst=[(X_train,Y_train),(X_validation,Y_validation),(X_test,Y_test)]
+        for i in range(len(xy_lst)):            #i表示下标，0训练集，1验证集，2测试集
+            X_part=xy_lst[i][0]
+            Y_part=xy_lst[i][1]
+Y_pred=clf.predict(X_part)
+            print(i)
+            print(clf_name,"ACC",accuracy_score(Y_part,Y_pred))
+            print(clf_name,"REC",recall_score(Y_part,Y_pred,average='macro'))
+            print(clf_name,"F-Score",f1_score(Y_part,Y_pred,average='macro'))
+dot_data=export_graphviz(clf,out_file=None,feature_names=f_names,class_names=["normal","DM","high","both"],filled=True,rounded=True,special_characters=True)                             #如果export_graphviz输出分类器tree_clf，如果out_file为none，dot_data直接输出
+    graph=pydotplus.graph_from_dot_data(dot_data)             #开始绘制
+    graph.write_pdf("dt_tree2.pdf")
+def main():
+features,label=health_preprocessing(bdu=True,bdd=True,glu=True,hg=True,wg=True,wai=True,age=True,tcho=True,tg=True,ldl=True,wbc=True,plt=True,hrt=True)
+    health_modeling(features,label)
+    #print(health_preprocessing(lower_d=True,ld_n=5))
+    # print(health_preprocessing().columns)
+    # sns.stripplot(x="GLU",y="LDL",data=health_preprocessing())
+    # plt.show()
+
+if __name__=="__main__":
+    main()
+
+
+
+
